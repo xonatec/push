@@ -2,7 +2,7 @@ Package.describe({
   name: 'xonatec:push',
   version: '3.0.3',
   summary: 'Isomorphic Push notifications for APN and GCM',
-  git: 'https://github.com/raix/push.git'
+  git: 'https://github.com/xonatec/push.git'
 });
 
 // Server-side push deps
@@ -12,7 +12,7 @@ Npm.depends({
 });
 
 Cordova.depends({
-  'phonegap-plugin-push': '1.3.0'
+  'phonegap-plugin-push': '1.6.3'
 });
 
 Package.registerBuildPlugin({

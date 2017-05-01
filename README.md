@@ -6,7 +6,7 @@ raix:push Push notifications
 
 Status:
 * [x] APN iOS
-* [x] GCM Android
+* [x] GCM/FCM Android
 * [x] APN Safari web push (partially implemented)
 * [x] GCM Chrome OS (partially implemented)
 * [x] Firefox OS (partially implemented)
@@ -16,6 +16,14 @@ Status:
 * [ ] ADM Amazon Fire OS
 * [ ] Meteor in app notifications
 
+## Install
+```bash
+  $ meteor add raix:push
+  $ meteor add cordova:cordova-plugin-device@1.1.5
+  $ meteor add cordova:phonegap-plugin-push@1.5.2
+  # Note: you probably want to adjust the version numbers to the latest versions of the packages
+```
+
 ## Getting started
 Depending on the platforms you want to work with you will need some credentials or certificates.
 * [Android](docs/ANDROID.md)
@@ -23,46 +31,87 @@ Depending on the platforms you want to work with you will need some credentials 
 
 Have a look at the [Basic example](docs/BASIC.md)
 
-Read the [raix:push Newbie Manual](http://stached.io/standalone/fBLmRhsAuPSxKBSgM) by [@harryward](https://github.com/harryward)
+Theres a good walkthrough by [Arthur Carabott](https://medium.com/@acarabott/meteor-native-ios-push-notifications-heroku-raix-push-cordova-213f486c4e6d#.akrtpzmi7)
+
+Read the [raix:push Newbie Manual](https://github.com/raix/push/wiki/raix:push-Newbie-Manual) by [@harryward](https://github.com/harryward)
 
 Or check out the [DEMO](https://github.com/elvismercado/meteor-raix-push-demo) by [@elvismercado](https://github.com/elvismercado)
+(This example uses the deprecated config.push.json)
 
 Example code for [sound](https://github.com/raix/push/issues/9#issuecomment-216068188) *(todo: add in docs)*
 
 Note:
 Version 3 uses the cordova npm plugin [phonegap-plugin-push](https://github.com/phonegap/phonegap-plugin-push#pushnotificationinitoptions)
 
+Note:
+Some of the documentation is outdated, please file an issue or create a pull request - same if you find a bug or want to add tests
+
 ## Config
-Add a `config.push.json` file in your project and configure credentials / keys / certificates:
+
+Use the `Push.Configure` function on client and server.
+
+### Client
+
+For example in `Meteor.startup()` block of main.js
 
 ```js
-{
-  "apn": {
-    "passphrase": "xxxxxxxxx",  
-    "key": "apnProdKey.pem",
-    "cert": "apnProdCert.pem"
+Push.Configure({
+  android: {
+    senderID: 12341234,
+    alert: true,
+    badge: true,
+    sound: true,
+    vibrate: true,
+    clearNotifications: true
+    // icon: '',
+    // iconColor: ''
   },
-  "apn-dev": {
-    "passphrase": "xxxxxxxxx",
-    "key": "apnDevKey.pem",
-    "cert": "apnDevCert.pem"
-  },  
-  "gcm": {
-    "apiKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "projectNumber": xxxxxxxxxxxx
-  },
-  "production": true,
-  // "badge": true,
-  // "sound": true,
-  // "alert": true,
-  // "vibrate": true,
-  // "sendInterval": 15000,  Configurable interval between sending notifications
-  // "sendBatchSize": 1  Configurable number of notifications to send per batch
-}
+  ios: {
+    alert: true,
+    badge: true,
+    sound: true
+  }
+});
 ```
-*Note: This file should be pure json, comments are supported/stripped out before parsing*
 
-## Common api
+Additionally you have to touch `mobile-config.js`
+```js
+App.configurePlugin('phonegap-plugin-push', {
+  SENDER_ID: 12341234
+});
+```
+*This is due to changes in the cordova plugin itself*
+
+### Server
+
+For example in `Meteor.startup()` block of main.js
+
+```js
+Push.Configure({
+  apn: {
+    certData: Assets.getText('apnDevCert.pem'),
+    keyData: Assets.getText('apnDevKey.pem'),
+    passphrase: 'xxxxxxxxx',
+    production: true,
+    //gateway: 'gateway.push.apple.com',
+  },
+  gcm: {
+    apiKey: 'xxxxxxx',  // GCM/FCM server key
+  }
+  // production: true,
+  // 'sound' true,
+  // 'badge' true,
+  // 'alert' true,
+  // 'vibrate' true,
+  // 'sendInterval': 15000, Configurable interval between sending
+  // 'sendBatchSize': 1, Configurable number of notifications to send per batch
+  // 'keepNotifications': false,
+//
+});
+```
+*Note: `config.push.json` is deprecating*
+
+## Common API
 ```js
     // Push.debug = true; // Add verbosity
 
@@ -83,7 +132,7 @@ Add a `config.push.json` file in your project and configure credentials / keys /
 ```
 *When in secure mode the client send features require adding allow/deny rules in order to allow the user to send push messages to other users directly from the client - Read more below*
 
-## Client api
+## Client API
 ```js
     Push.id(); // Unified application id - not a token
     Push.setBadge(count); // ios specific - ignored everywhere else
